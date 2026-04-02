@@ -1,7 +1,4 @@
-pub struct Repo {
-    pub name: String,
-    pub selected: bool,
-}
+use crate::models::Repo;
 
 pub struct App {
     pub repos: Vec<Repo>,
@@ -9,6 +6,30 @@ pub struct App {
 }
 
 impl App {
+    pub fn new(repos: Vec<Repo>) -> Self {
+        Self { repos, cursor: 0 }
+    }
+
+    pub fn next(&mut self) {
+        if self.repos.is_empty() {
+            return;
+        }
+
+        self.cursor = (self.cursor + 1) % self.repos.len();
+    }
+
+    pub fn previous(&mut self) {
+        if self.repos.is_empty() {
+            return;
+        }
+
+        if self.cursor == 0 {
+            self.cursor = self.repos.len() - 1;
+        } else {
+            self.cursor -= 1;
+        }
+    }
+
     pub fn toggle(&mut self) {
         if let Some(repo) = self.repos.get_mut(self.cursor) {
             repo.selected = !repo.selected;

@@ -28,15 +28,15 @@ pub async fn make_private(
     username: &str,
     token: &str,
     repo: &str,
-) -> Result<Vec<Repo>, Box<dyn Error>> {
-    let clinet = Client::new();
+) -> Result<(), Box<dyn Error>> {
+    let client = Client::new();
 
     client
         .patch(format!(
             "https://api.github.com/repos/{}/{}",
             username, repo
         ))
-        .header("User-Agent", "githun-repo-control")
+        .header("User-Agent", "github-repo-control")
         .header("Authorization", format!("Bearer {}", token))
         .json(&serde_json::json!({"private" : true}))
         .send()

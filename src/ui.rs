@@ -1,5 +1,3 @@
-use std::{os::linux::raw::stat, vec};
-
 use ratatui::{
     Frame,
     widgets::{Block, Borders, List, ListItem, ListState},
@@ -27,6 +25,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 .borders(Borders::ALL),
         )
         .highlight_symbol(">>");
-    let area = f.size();
+    let area = f.area();
     f.render_stateful_widget(list, area, &mut state);
 }
