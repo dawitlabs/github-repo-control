@@ -20,7 +20,7 @@ GitHub Repo Control is a terminal app for reviewing your GitHub repositories and
 ### Option 1: Build From Source
 
 ```bash
-git clone https://github.com/<your-username>/github-repo-control.git
+git clone https://github.com/dawitlabs/github-repo-control.git
 cd github-repo-control
 cargo run
 ```
