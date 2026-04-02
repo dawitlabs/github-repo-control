@@ -22,6 +22,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         return;
     }
 
+    if app.mode == AppMode::Loading {
+        draw_loading(f, app);
+        return;
+    }
+
     let root = f.area();
     let root = root.inner(Margin::new(1, 1));
 
@@ -93,6 +98,58 @@ fn draw_credentials(f: &mut Frame, app: &App) {
     let panel = Paragraph::new(lines)
         .alignment(Alignment::Left)
         .block(panel_block("login", PANEL_BORDER_ACTIVE));
+
+    f.render_widget(panel, center);
+}
+
+fn draw_loading(f: &mut Frame, app: &App) {
+    let root = f.area();
+    let center = centered_rect(58, 28, root);
+
+    let message = app
+        .status_message
+        .as_deref()
+        .unwrap_or("Checking credentials...");
+
+    let detail = if message.contains("Validating") {
+        "Step 1 of 2: verifying the token and username."
+    } else if message.contains("Fetching") {
+        "Step 2 of 2: loading public repositories for the dashboard."
+    } else {
+        "Signing you in before the dashboard opens."
+    };
+
+    let panel = Paragraph::new(vec![
+        Line::from(vec![
+            Span::styled(
+                "GitHub Repo Control",
+                Style::default().fg(ACCENT).add_modifier(Modifier::BOLD),
+            ),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled(
+                "Signing in",
+                Style::default().fg(HIGHLIGHT).add_modifier(Modifier::BOLD),
+            ),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("status", Style::default().fg(MUTED)),
+            Span::raw(format!(": {}", message)),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::raw(detail),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Please wait", Style::default().fg(DETAILS).add_modifier(Modifier::BOLD)),
+            Span::raw("; the dashboard will open automatically after validation."),
+        ]),
+    ])
+    .alignment(Alignment::Left)
+    .block(panel_block("loading", PANEL_BORDER_ACTIVE));
 
     f.render_widget(panel, center);
 }

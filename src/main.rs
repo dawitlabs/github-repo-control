@@ -14,7 +14,7 @@ use std::error::Error;
 use std::io;
 
 use app::{App, AppMode, CredentialField};
-use github::{fetch_repos, make_private};
+use github::{fetch_repos, make_private, validate_credentials, CredentialError};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let result: Result<(), Box<dyn Error>> = async {
         let mut app = App::new(Vec::new());
-        app.set_status("Enter your GitHub username and token.");
+        app.set_status("Enter your GitHub username and token to load public repositories.");
 
         terminal.draw(|f| ui::draw(f, &mut app))?;
 
@@ -51,22 +51,48 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     app.clear_status();
                                 } else if app.credentials_ready() {
                                     app.mode = AppMode::Loading;
-                                    app.set_status("Fetching repositories...");
+                                    app.set_status("Validating credentials...");
                                     terminal.draw(|f| ui::draw(f, &mut app))?;
 
-                                    let repos = fetch_repos(app.username(), app.token()).await;
-                                    match repos {
-                                        Ok(repos) => {
-                                            app.repos = repos;
-                                            app.cursor = 0;
-                                            app.mode = AppMode::Dashboard;
-                                            app.set_status("Welcome. Pick repos, then press p to make them private.");
+                                    let validation = validate_credentials(app.username(), app.token()).await;
+                                    match validation {
+                                        Ok(()) => {
+                                            app.set_status("Fetching public repositories...");
+                                            terminal.draw(|f| ui::draw(f, &mut app))?;
+
+                                            let repos = fetch_repos(app.username(), app.token()).await;
+                                            match repos {
+                                                Ok(repos) => {
+                                                    app.repos = repos;
+                                                    app.cursor = 0;
+                                                    app.mode = AppMode::Dashboard;
+                                                    app.set_status("Welcome. Pick public repos, then press p to make them private.");
+                                                }
+                                                Err(error) => {
+                                                    app.repos.clear();
+                                                    app.mode = AppMode::Credentials;
+                                                    app.active_field = CredentialField::Username;
+                                                    app.set_status(format!("Failed to fetch repositories: {}", error));
+                                                }
+                                            }
                                         }
-                                        Err(error) => {
+                                        Err(CredentialError::WrongToken) => {
                                             app.repos.clear();
                                             app.mode = AppMode::Credentials;
                                             app.active_field = CredentialField::Username;
-                                            app.set_status(format!("Failed to fetch repositories: {}", error));
+                                            app.set_status("Wrong username or token.");
+                                        }
+                                        Err(CredentialError::WrongUsername { authenticated_user: _ }) => {
+                                            app.repos.clear();
+                                            app.mode = AppMode::Credentials;
+                                            app.active_field = CredentialField::Username;
+                                            app.set_status("Wrong username or token.");
+                                        }
+                                        Err(CredentialError::Request(error)) => {
+                                            app.repos.clear();
+                                            app.mode = AppMode::Credentials;
+                                            app.active_field = CredentialField::Username;
+                                            app.set_status(format!("Credential check failed: {}", error));
                                         }
                                     }
                                 } else {
